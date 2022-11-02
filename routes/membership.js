@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Membership = require("../models/memberships");
+const bcrypt = require("bcrypt");
 
 //Login page
 router.get("/", async (req, res) => {
@@ -20,22 +21,28 @@ router.get("/new", (req, res) => {
 
 //create user route
 router.post("/", async (req, res) => {
+  const saltPassword = await bcrypt.genSalt(10);
+  const securePasswoard = await bcrypt.hash(req.body.password, saltPassword);
   const member = new Membership({
     username: req.body.username,
     email: req.body.email,
-    password: req.body.password,
-    password2: req.body.password,
+    password: securePasswoard,
+    password2: securePasswoard,
   });
-  try {
-    const newMember = await member.save();
-    //res.redirect(`membership/${newMember.id}`);
-    res.render("membership");
-  } catch {
-    res.render("membership/new", {
-      member: member,
-      errorMessage: "Error creating account",
+  member
+    .save()
+    .then((data) => {
+      // res.json(data);
+      //res.redirect(`membership/${newMember.id}`);
+      res.render("membership");
+    })
+    .catch((err) => {
+      res.json(err);
+      res.render("membership/new", {
+        member: member,
+        errorMessage: "Error creating account",
+      });
     });
-  }
 });
 
 module.exports = router;
